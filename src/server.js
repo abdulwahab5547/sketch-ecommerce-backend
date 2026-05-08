@@ -6,6 +6,8 @@ import { connectDB } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import productRoutes from "./routes/products.js";
 import statsRoutes from "./routes/stats.js";
+import suppliesRoutes from "./routes/supplies.js";
+import aboutRoutes from "./routes/about.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -19,6 +21,8 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/supplies", suppliesRoutes);
+app.use("/api/about", aboutRoutes);
 app.use("/api/admin", statsRoutes);
 
 // 404 for /api
