@@ -105,6 +105,8 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
       status: body.status ?? "available",
       motif: body.motif || null,
       palette: body.palette ?? [],
+      imageUrl: body.imageUrl || null,
+      cloudinaryPublicId: body.cloudinaryPublicId || null,
     });
 
     res.status(201).json({ product: doc.toJSON() });
@@ -125,6 +127,7 @@ router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
     const allowed = [
       "title", "category", "series", "medium", "size",
       "year", "edition", "price", "status", "motif", "palette",
+      "imageUrl", "cloudinaryPublicId",
     ];
     const update = {};
     for (const f of allowed) {

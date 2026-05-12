@@ -11,6 +11,7 @@ import productRoutes from "./routes/products.js";
 import statsRoutes from "./routes/stats.js";
 import suppliesRoutes from "./routes/supplies.js";
 import aboutRoutes from "./routes/about.js";
+import uploadsRoutes from "./routes/uploads.js";
 
 const app = express();
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
@@ -38,6 +39,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/supplies", suppliesRoutes);
 app.use("/api/about", aboutRoutes);
+app.use("/api/uploads", uploadsRoutes);
 app.use("/api/admin", statsRoutes);
 
 // 404 for /api

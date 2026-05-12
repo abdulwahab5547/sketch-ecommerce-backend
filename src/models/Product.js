@@ -43,6 +43,10 @@ const productSchema = new mongoose.Schema(
         message: "palette must be an array of 3 hex colors (or empty)",
       },
     },
+    // Cloudinary-hosted product image. Optional — falls back to the
+    // procedural placeholder (motif + palette) when null.
+    imageUrl: { type: String, default: null },
+    cloudinaryPublicId: { type: String, default: null },
   },
   {
     timestamps: true,
