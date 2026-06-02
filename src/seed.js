@@ -8,6 +8,7 @@ import { User } from "./models/User.js";
 import { Product } from "./models/Product.js";
 import { SupplyGroup } from "./models/SupplyGroup.js";
 import { About, getAbout } from "./models/About.js";
+import { Studio, getStudio } from "./models/Studio.js";
 import { ARTWORKS } from "../../frontend/src/data/artworks.js";
 import { SUPPLY_GROUPS } from "../../frontend/src/data/supplies.js";
 import { BIO, JOURNEY } from "../../frontend/src/data/journey.js";
@@ -104,12 +105,45 @@ async function seedAbout() {
   console.log(`✓ about seeded: ${doc.journey.length} journey years`);
 }
 
+async function seedStudio() {
+  const existing = await Studio.findById("main");
+  if (existing && (existing.process?.length || existing.intro)) {
+    console.log("✓ studio already seeded");
+    return;
+  }
+  const doc = await getStudio();
+  doc.eyebrow = "Inside the studio";
+  doc.title = "The Studio";
+  doc.intro =
+    "Every piece is drawn by hand over six to ten sittings — graphite and ink on archival cotton. Here's how a drawing comes together, and exactly what arrives in the box.";
+  doc.process = [
+    { num: "01", title: "Reference", desc: "Hours of stills, frames, and screenshots — pinned, sorted, lived with." },
+    { num: "02", title: "Block-in", desc: "Loose construction in 2H, finding the gesture and the bones." },
+    { num: "03", title: "Render", desc: "Slow build with 4B, 6B, and a soft brush — light, then shadow, then light again." },
+    { num: "04", title: "Sign & ship", desc: "Signed in graphite, sleeved in archival board, packed flat for the post." },
+  ];
+  doc.shippedIntro = "Each original ships flat from Karachi, carefully protected. Inside the box:";
+  doc.shipped = [
+    { title: "The original drawing", note: "Hand-signed in graphite, sleeved between acid-free archival boards." },
+    { title: "Certificate of authenticity", note: "Signed and numbered, confirming the piece is an original 1-of-1." },
+    { title: "Care card", note: "How to frame, hang, and protect graphite work so it lasts a lifetime." },
+    { title: "A handwritten note", note: "Because every piece that leaves the studio still means something to me." },
+  ];
+  doc.certificateIntro =
+    "Every original comes with a signed certificate of authenticity — proof that the piece is one-of-one, drawn entirely by hand.";
+  doc.certificateImageUrl = null;
+  doc.certificatePublicId = null;
+  await doc.save();
+  console.log(`✓ studio seeded: ${doc.process.length} process steps, ${doc.shipped.length} shipped items`);
+}
+
 async function main() {
   await connectDB();
   await seedAdmin();
   await seedProducts();
   await seedSupplies();
   await seedAbout();
+  await seedStudio();
   console.log("done.");
   await disconnectDB();
 }

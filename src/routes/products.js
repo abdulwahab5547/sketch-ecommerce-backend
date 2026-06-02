@@ -5,6 +5,7 @@ import {
   VALID_CATEGORIES,
   VALID_STATUSES,
   VALID_MOTIFS,
+  VALID_ORIENTATIONS,
 } from "../models/Product.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.js";
 
@@ -44,12 +45,38 @@ function validateProduct(body, { partial = false } = {}) {
   if (body.price !== undefined && (Number.isNaN(Number(body.price)) || Number(body.price) < 0)) {
     errors.push("price must be a non-negative number");
   }
+  if (body.quantity !== undefined && body.quantity !== null && body.quantity !== "" &&
+      (Number.isNaN(Number(body.quantity)) || Number(body.quantity) < 0)) {
+    errors.push("quantity must be a non-negative number");
+  }
+  if (body.orientation !== undefined && body.orientation !== null && body.orientation !== "" &&
+      !VALID_ORIENTATIONS.includes(body.orientation)) {
+    errors.push(`orientation must be one of ${VALID_ORIENTATIONS.join(", ")}`);
+  }
+  if (body.images !== undefined && body.images !== null && !Array.isArray(body.images)) {
+    errors.push("images must be an array of { url, publicId }");
+  }
   if (body.palette !== undefined && body.palette !== null) {
     if (!Array.isArray(body.palette) || (body.palette.length !== 0 && body.palette.length !== 3)) {
       errors.push("palette must be an array of 3 hex colors (or empty)");
     }
   }
   return errors;
+}
+
+// Build a clean, ordered images array from whatever the client sent. Falls
+// back to the legacy single imageUrl/cloudinaryPublicId pair when no gallery
+// is provided, so older clients keep working.
+function normalizeImages(body) {
+  if (Array.isArray(body.images)) {
+    return body.images
+      .filter((im) => im && typeof im.url === "string" && im.url.trim())
+      .map((im) => ({ url: im.url.trim(), publicId: im.publicId || null }));
+  }
+  if (body.imageUrl) {
+    return [{ url: String(body.imageUrl), publicId: body.cloudinaryPublicId || null }];
+  }
+  return [];
 }
 
 // ---------- Public (read) ----------
@@ -92,6 +119,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
       return res.status(409).json({ error: `Product id "${id}" already exists` });
     }
 
+    const images = normalizeImages(body);
     const doc = await Product.create({
       _id: id,
       title: body.title,
@@ -101,12 +129,16 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
       size: body.size ?? null,
       year: body.year ?? null,
       edition: body.edition ?? "Original, 1 of 1",
+      quantity: body.quantity === undefined || body.quantity === "" ? 1 : Number(body.quantity),
+      orientation: body.orientation || "portrait",
       price: Number(body.price),
       status: body.status ?? "available",
       motif: body.motif || null,
       palette: body.palette ?? [],
-      imageUrl: body.imageUrl || null,
-      cloudinaryPublicId: body.cloudinaryPublicId || null,
+      images,
+      // Keep the legacy single-image fields in sync with the main picture.
+      imageUrl: images[0]?.url ?? null,
+      cloudinaryPublicId: images[0]?.publicId ?? null,
     });
 
     res.status(201).json({ product: doc.toJSON() });
@@ -127,13 +159,24 @@ router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
     const allowed = [
       "title", "category", "series", "medium", "size",
       "year", "edition", "price", "status", "motif", "palette",
-      "imageUrl", "cloudinaryPublicId",
+      "orientation",
     ];
     const update = {};
     for (const f of allowed) {
       if (body[f] !== undefined) {
         update[f] = f === "price" ? Number(body[f]) : body[f];
       }
+    }
+    if (body.quantity !== undefined) {
+      update.quantity = body.quantity === "" ? 1 : Number(body.quantity);
+    }
+    // When images (or the legacy single-image fields) are sent, rebuild the
+    // gallery and re-sync the main-picture mirror fields.
+    if (body.images !== undefined || body.imageUrl !== undefined) {
+      const images = normalizeImages(body);
+      update.images = images;
+      update.imageUrl = images[0]?.url ?? null;
+      update.cloudinaryPublicId = images[0]?.publicId ?? null;
     }
     if (Object.keys(update).length === 0) {
       return res.status(400).json({ error: "No fields to update" });

@@ -11,6 +11,7 @@ import productRoutes from "./routes/products.js";
 import statsRoutes from "./routes/stats.js";
 import suppliesRoutes from "./routes/supplies.js";
 import aboutRoutes from "./routes/about.js";
+import studioRoutes from "./routes/studio.js";
 import uploadsRoutes from "./routes/uploads.js";
 
 const app = express();
@@ -39,6 +40,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/supplies", suppliesRoutes);
 app.use("/api/about", aboutRoutes);
+app.use("/api/studio", studioRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/admin", statsRoutes);
 
