@@ -2,7 +2,6 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import {
   Product,
-  VALID_CATEGORIES,
   VALID_STATUSES,
   VALID_MOTIFS,
   VALID_ORIENTATIONS,
@@ -33,8 +32,9 @@ function validateProduct(body, { partial = false } = {}) {
       errors.push(`${k} is required`);
     }
   }
-  if (body.category !== undefined && !VALID_CATEGORIES.includes(body.category)) {
-    errors.push(`category must be one of ${VALID_CATEGORIES.join(", ")}`);
+  // category is admin-managed (Taxonomy) — any non-empty value is accepted.
+  if (body.category !== undefined && !String(body.category).trim()) {
+    errors.push("category is required");
   }
   if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
     errors.push(`status must be one of ${VALID_STATUSES.join(", ")}`);

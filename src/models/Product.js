@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+// Initial seed set only. Categories are managed by the admin (see Taxonomy),
+// so product.category is NOT constrained to this list.
 export const VALID_CATEGORIES = ["cars", "characters", "anime"];
 export const VALID_STATUSES = ["available", "sold", "reserved"];
 export const VALID_MOTIFS = [
@@ -28,7 +30,7 @@ const productSchema = new mongoose.Schema(
     // can keep returning a stable string id for each product.
     _id: { type: String },
     title: { type: String, required: true, trim: true },
-    category: { type: String, required: true, enum: VALID_CATEGORIES, index: true },
+    category: { type: String, required: true, trim: true, index: true },
     series: { type: String, required: true, index: true },
     medium: { type: String, default: null },
     size: { type: String, default: null },

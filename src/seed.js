@@ -9,7 +9,8 @@ import { Product } from "./models/Product.js";
 import { SupplyGroup } from "./models/SupplyGroup.js";
 import { About, getAbout } from "./models/About.js";
 import { Studio, getStudio } from "./models/Studio.js";
-import { ARTWORKS } from "../../frontend/src/data/artworks.js";
+import { Taxonomy, getTaxonomy } from "./models/Taxonomy.js";
+import { ARTWORKS, CATEGORIES, SERIES_BY_CATEGORY } from "../../frontend/src/data/artworks.js";
 import { SUPPLY_GROUPS } from "../../frontend/src/data/supplies.js";
 import { BIO, JOURNEY } from "../../frontend/src/data/journey.js";
 
@@ -137,9 +138,28 @@ async function seedStudio() {
   console.log(`✓ studio seeded: ${doc.process.length} process steps, ${doc.shipped.length} shipped items`);
 }
 
+async function seedTaxonomy() {
+  const existing = await Taxonomy.findById("main");
+  if (existing && existing.categories?.length) {
+    console.log("✓ taxonomy already seeded");
+    return;
+  }
+  const doc = await getTaxonomy();
+  doc.categories = CATEGORIES.map((c) => ({
+    key: c,
+    name: c.charAt(0).toUpperCase() + c.slice(1),
+  }));
+  doc.series = Object.entries(SERIES_BY_CATEGORY).flatMap(([category, names]) =>
+    names.map((name) => ({ name, category }))
+  );
+  await doc.save();
+  console.log(`✓ taxonomy seeded: ${doc.categories.length} categories, ${doc.series.length} series`);
+}
+
 async function main() {
   await connectDB();
   await seedAdmin();
+  await seedTaxonomy();
   await seedProducts();
   await seedSupplies();
   await seedAbout();
