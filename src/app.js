@@ -13,6 +13,8 @@ import suppliesRoutes from "./routes/supplies.js";
 import aboutRoutes from "./routes/about.js";
 import studioRoutes from "./routes/studio.js";
 import taxonomyRoutes from "./routes/taxonomy.js";
+import settingsRoutes from "./routes/settings.js";
+import ordersRoutes from "./routes/orders.js";
 import uploadsRoutes from "./routes/uploads.js";
 
 const app = express();
@@ -43,6 +45,8 @@ app.use("/api/supplies", suppliesRoutes);
 app.use("/api/about", aboutRoutes);
 app.use("/api/studio", studioRoutes);
 app.use("/api/taxonomy", taxonomyRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/orders", ordersRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/admin", statsRoutes);
 

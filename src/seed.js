@@ -10,6 +10,7 @@ import { SupplyGroup } from "./models/SupplyGroup.js";
 import { About, getAbout } from "./models/About.js";
 import { Studio, getStudio } from "./models/Studio.js";
 import { Taxonomy, getTaxonomy } from "./models/Taxonomy.js";
+import { Settings, getSettings } from "./models/Settings.js";
 import { ARTWORKS, CATEGORIES, SERIES_BY_CATEGORY } from "../../frontend/src/data/artworks.js";
 import { SUPPLY_GROUPS } from "../../frontend/src/data/supplies.js";
 import { BIO, JOURNEY } from "../../frontend/src/data/journey.js";
@@ -156,10 +157,94 @@ async function seedTaxonomy() {
   console.log(`✓ taxonomy seeded: ${doc.categories.length} categories, ${doc.series.length} series`);
 }
 
+async function seedSettings() {
+  const existing = await Settings.findById("main");
+  if (existing && (existing.hero?.slides?.length || existing.contactEmail)) {
+    console.log("✓ settings already seeded");
+    return;
+  }
+  const doc = await getSettings();
+  doc.hero = {
+    slides: [
+      {
+        eyebrow: "About the artist",
+        title: "Zaid Ikram",
+        titleMeta: "Karachi · Working in graphite & ink since 2020.",
+        lede: "Six years of slow, hand-drawn studies. Read the studio journey, year by year — how the work started, what changed, where it's going.",
+        ctaLabel: "Read the story",
+        href: "/about",
+        imageUrl: null,
+        publicId: null,
+      },
+      {
+        eyebrow: "Originals · 1 of 1",
+        title: "Take one home",
+        titleMeta: "Cars, characters, anime. Hand-signed and shipped flat.",
+        lede: "Every drawing is the only one of its kind. Browse the shop — filter by category and series, see what's available right now.",
+        ctaLabel: "Browse the shop",
+        href: "/shop",
+        imageUrl: null,
+        publicId: null,
+      },
+      {
+        eyebrow: "The kit · 2026",
+        title: "My art supplies",
+        titleMeta: "What I actually use — pencils, paper, erasers, inks.",
+        lede: "I'm asked about my kit constantly. Here it is, honestly. Nothing on this page was sent to me — buy whichever you can find.",
+        ctaLabel: "See the kit",
+        href: "/supplies",
+        imageUrl: null,
+        publicId: null,
+      },
+    ],
+  };
+  doc.work = {
+    eyebrow: "Selected work",
+    title: "A slow study of characters and cars.",
+    lede: "Pieces from the studio — the ones I'm proudest of, and the ones I keep coming back to.",
+    productIds: [],
+  };
+  doc.quote = {
+    text: "I draw the figures I grew up admiring — the silent assassin, the kid in the mask, the car that sounded like thunder. Slowly, with a soft pencil, until they look back.",
+    attribution: "Zaid Ikram, in studio",
+  };
+  doc.process = {
+    eyebrow: "The process",
+    title: "Four stages, one pencil.",
+    steps: [
+      { num: "01", title: "Reference", desc: "Hours of stills, frames, and screenshots — pinned, sorted, lived with." },
+      { num: "02", title: "Block-in", desc: "Loose construction in 2H, finding the gesture and the bones." },
+      { num: "03", title: "Render", desc: "Slow build with 4B, 6B, and a soft brush — light, then shadow, then light again." },
+      { num: "04", title: "Sign & ship", desc: "Signed in graphite, sleeved in archival board, packed flat for the post." },
+    ],
+  };
+  doc.contactEmail = "4t7sketch@gmail.com";
+  doc.socials = [
+    { name: "Instagram", href: "#" },
+    { name: "Behance", href: "#" },
+    { name: "X", href: "#" },
+    { name: "YouTube", href: "#" },
+    { name: "Spotify", href: "#" },
+    { name: "Facebook", href: "#" },
+  ];
+  doc.payment = {
+    whatsapp: "+92 300 0000000",
+    instructions:
+      "Pay the total to any account below, then send your payment screenshot on WhatsApp with your order reference. Your order is confirmed once payment is verified.",
+    methods: [
+      { label: "JazzCash", accountName: "Zaid Ikram", accountNumber: "0300 0000000", extra: "" },
+      { label: "Bank Transfer", accountName: "Zaid Ikram", accountNumber: "PK00 XXXX 0000 0000 0000", extra: "Meezan Bank" },
+    ],
+  };
+  await doc.save();
+  console.log(`✓ settings seeded: ${doc.hero.slides.length} hero slides, ${doc.socials.length} socials`);
+}
+
 async function main() {
   await connectDB();
   await seedAdmin();
   await seedTaxonomy();
+  await seedSettings();
   await seedProducts();
   await seedSupplies();
   await seedAbout();
