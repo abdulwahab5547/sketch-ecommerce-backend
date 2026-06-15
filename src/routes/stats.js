@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { Product } from "../models/Product.js";
+import { Order } from "../models/Order.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
@@ -51,12 +52,47 @@ router.get("/stats", requireAuth, requireAdmin, async (_req, res, next) => {
       };
     });
 
+    // ---- Real order-based sales metrics ----
+    const orderAgg = await Order.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 }, sum: { $sum: "$total" } } },
+    ]);
+    const byStatus = Object.fromEntries(orderAgg.map((o) => [o._id, o]));
+    const orderStat = (s) => ({ count: byStatus[s]?.count ?? 0, sum: byStatus[s]?.sum ?? 0 });
+    const confirmed = orderStat("confirmed");
+    const pending = orderStat("pending");
+    const cancelled = orderStat("cancelled");
+    const orders = {
+      total: confirmed.count + pending.count + cancelled.count,
+      confirmed: confirmed.count,
+      pending: pending.count,
+      cancelled: cancelled.count,
+      revenue: confirmed.sum, // money actually earned (confirmed orders)
+      pendingValue: pending.sum, // money awaiting confirmation
+    };
+
+    const recentOrderDocs = await Order.find().sort({ createdAt: -1 }).limit(6);
+    const recentOrders = recentOrderDocs.map((d) => {
+      const o = d.toJSON();
+      return {
+        id: o.id,
+        ref: o.ref,
+        name: o.customer?.name || "",
+        email: o.customer?.email || "",
+        total: o.total,
+        status: o.status,
+        itemCount: (o.items || []).reduce((n, it) => n + it.qty, 0),
+        createdAt: o.createdAt,
+      };
+    });
+
     res.json({
       totals: { total, available, sold, reserved },
       inventoryValue,
       lifetimeValue,
+      orders,
       byCategory,
       recent,
+      recentOrders,
     });
   } catch (err) {
     next(err);

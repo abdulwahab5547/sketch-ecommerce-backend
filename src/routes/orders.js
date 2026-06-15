@@ -17,6 +17,51 @@ async function generateRef() {
   return `ZI-${Date.now().toString(36).toUpperCase()}`;
 }
 
+// ---------- Inventory linkage ----------
+// An order "holds" inventory while it's pending or confirmed; cancelling
+// releases it. Out-of-stock pieces are marked reserved (pending) or sold
+// (confirmed); restored to available when stock returns.
+const holdsStock = (status) => status === "pending" || status === "confirmed";
+
+async function reserveItems(items) {
+  for (const it of items) {
+    if (!it.productId) continue;
+    const p = await Product.findById(it.productId);
+    if (!p) continue;
+    p.quantity = Math.max(0, (p.quantity || 0) - it.qty);
+    if (p.quantity <= 0) p.status = "reserved";
+    await p.save();
+  }
+}
+
+async function releaseItems(items) {
+  for (const it of items) {
+    if (!it.productId) continue;
+    const p = await Product.findById(it.productId);
+    if (!p) continue;
+    p.quantity = (p.quantity || 0) + it.qty;
+    if (p.quantity > 0 && (p.status === "reserved" || p.status === "sold")) {
+      p.status = "available";
+    }
+    await p.save();
+  }
+}
+
+// Reflect the order's holding status onto out-of-stock products:
+// confirmed → "sold", pending → "reserved".
+async function markItemsStatus(items, orderStatus) {
+  const target = orderStatus === "confirmed" ? "sold" : "reserved";
+  for (const it of items) {
+    if (!it.productId) continue;
+    const p = await Product.findById(it.productId);
+    if (!p) continue;
+    if (p.quantity <= 0) {
+      p.status = target;
+      await p.save();
+    }
+  }
+}
+
 // Public view of an order — never leaks more than the customer needs.
 function publicView(doc) {
   const o = doc.toJSON();
@@ -83,6 +128,10 @@ router.post("/", async (req, res, next) => {
       status: "pending",
     });
 
+    // Reserve stock for the new (pending) order so the same 1-of-1 can't be
+    // ordered twice while payment is pending.
+    await reserveItems(doc.items);
+
     // The creator gets the full-ish public view (includes their ref to track).
     res.status(201).json({ order: publicView(doc) });
   } catch (err) {
@@ -137,8 +186,25 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res, next) => {
     if (!VALID_ORDER_STATUSES.includes(status)) {
       return res.status(400).json({ error: `status must be one of ${VALID_ORDER_STATUSES.join(", ")}` });
     }
-    const doc = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const doc = await Order.findById(req.params.id);
     if (!doc) return res.status(404).json({ error: "Not found" });
+
+    const prev = doc.status;
+    doc.status = status;
+    await doc.save();
+
+    // Apply the inventory effect of the status transition.
+    if (prev !== status) {
+      if (!holdsStock(prev) && holdsStock(status)) {
+        await reserveItems(doc.items);          // cancelled → pending/confirmed
+        await markItemsStatus(doc.items, status);
+      } else if (holdsStock(prev) && !holdsStock(status)) {
+        await releaseItems(doc.items);          // pending/confirmed → cancelled
+      } else if (holdsStock(prev) && holdsStock(status)) {
+        await markItemsStatus(doc.items, status); // pending ↔ confirmed
+      }
+    }
+
     res.json({ order: doc.toJSON() });
   } catch (err) {
     next(err);
