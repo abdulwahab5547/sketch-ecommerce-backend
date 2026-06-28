@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { Order, VALID_ORDER_STATUSES } from "../models/Order.js";
 import { Product } from "../models/Product.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.js";
+import { notifyOrderPlaced, notifyOrderStatusChanged } from "../lib/mailer.js";
 
 const router = Router();
 
@@ -132,6 +133,10 @@ router.post("/", async (req, res, next) => {
     // ordered twice while payment is pending.
     await reserveItems(doc.items);
 
+    // Email the customer their confirmation + alert the owner. Never throws —
+    // a mail problem must not fail an order that's already saved.
+    await notifyOrderPlaced(doc);
+
     // The creator gets the full-ish public view (includes their ref to track).
     res.status(201).json({ order: publicView(doc) });
   } catch (err) {
@@ -203,6 +208,9 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res, next) => {
       } else if (holdsStock(prev) && holdsStock(status)) {
         await markItemsStatus(doc.items, status); // pending ↔ confirmed
       }
+
+      // Tell the customer when their order is confirmed or cancelled.
+      await notifyOrderStatusChanged(doc);
     }
 
     res.json({ order: doc.toJSON() });

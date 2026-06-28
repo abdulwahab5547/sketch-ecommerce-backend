@@ -54,6 +54,8 @@ function normalizeWork(w) {
     title: String(w.title || "").trim(),
     motif: w.motif || null,
     palette: Array.isArray(w.palette) ? w.palette : [],
+    imageUrl: w.imageUrl || null,
+    publicId: w.publicId || null,
   };
 }
 
@@ -88,6 +90,7 @@ router.put("/", requireAuth, requireAdmin, async (req, res, next) => {
     const update = {};
     if (body.bio !== undefined) {
       update.bio = {
+        name: body.bio.name ? String(body.bio.name).trim() : "",
         hero: body.bio.hero ? String(body.bio.hero) : "",
         intro: body.bio.intro ? String(body.bio.intro) : "",
         beginnings: Array.isArray(body.bio.beginnings)

@@ -18,6 +18,10 @@ const workSchema = new mongoose.Schema(
         message: "palette must be an array of 3 hex colors (or empty)",
       },
     },
+    // Optional uploaded photo of the piece. When set, it's shown instead of
+    // the procedural motif/palette placeholder on /about.
+    imageUrl: { type: String, default: null },
+    publicId: { type: String, default: null },
   },
   { _id: false }
 );
@@ -37,6 +41,8 @@ const aboutSchema = new mongoose.Schema(
     // Singleton: there is exactly one About document, with id "main".
     _id: { type: String, default: "main" },
     bio: {
+      // Display name shown as the big title on /about (e.g. "Zaid Ikram").
+      name: { type: String, default: "" },
       hero: { type: String, default: "" },
       intro: { type: String, default: "" },
       // Free-form paragraphs ("How I began" body).

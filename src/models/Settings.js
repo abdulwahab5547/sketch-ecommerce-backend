@@ -27,7 +27,16 @@ const stepSchema = new mongoose.Schema(
 const socialSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    href: { type: String, default: "#" },
+    href: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+// One figure in the homepage hero stat row ("142 / originals sold").
+const heroStatSchema = new mongoose.Schema(
+  {
+    num: { type: String, default: "" },
+    label: { type: String, default: "" },
   },
   { _id: false }
 );
@@ -50,6 +59,8 @@ const settingsSchema = new mongoose.Schema(
 
     hero: {
       slides: { type: [heroSlideSchema], default: [] },
+      // The little stat row under the carousel.
+      stats: { type: [heroStatSchema], default: [] },
     },
 
     // "Selected work" section.
@@ -78,6 +89,30 @@ const settingsSchema = new mongoose.Schema(
     // Global contact + socials.
     contactEmail: { type: String, default: "" },
     socials: { type: [socialSchema], default: [] },
+
+    // Footer copyright + sign-off (e.g. "© 2026 {brandName} · {tagline}").
+    footer: {
+      brandName: { type: String, default: "" },
+      tagline: { type: String, default: "" },
+      note: { type: String, default: "" },
+    },
+
+    // Portfolio page (/portfolio) intro copy. The gallery itself is the
+    // product catalogue; this is just the heading + lede above it.
+    portfolio: {
+      eyebrow: { type: String, default: "" },
+      title: { type: String, default: "" },
+      lede: { type: String, default: "" },
+    },
+
+    // Commissions page (/commissions) copy: heading, lede, and the
+    // "how it works" steps.
+    commissions: {
+      eyebrow: { type: String, default: "" },
+      title: { type: String, default: "" },
+      lede: { type: String, default: "" },
+      steps: { type: [String], default: [] },
+    },
 
     // Manual-payment checkout config.
     payment: {
